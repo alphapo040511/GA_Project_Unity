@@ -8,7 +8,7 @@ public class Item
     public string itemName;
     public int quantity;
 
-    public Item(string itemName, int quantity)
+    public Item(string itemName, int quantity = 1)
     {
         this.itemName = itemName;
         this.quantity = quantity;
