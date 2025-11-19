@@ -17,15 +17,22 @@ public class MazeGenerator : MonoBehaviour
     public float wallRate = 0.3f;
 
     // 1=벽, 0=길 (아주 작은 예시 맵)
-    bool[,] map;
+    protected bool[,] map;
 
-    bool[,] visited;    // 방문기록
-    Vector2Int goal = new Vector2Int(3, 3);         // 도착지 (3, 3)
-    Vector2Int[] dirs = { new(1, 0), new(0, 1), new(-1, 0), new(0, -1) };        // 탐색 순서
+    protected bool[,] visited;    // 방문기록
+    protected Vector2Int start = new Vector2Int(1, 1);
+    protected Vector2Int goal = new Vector2Int(3, 3);         // 도착지 (3, 3)
+    protected Vector2Int[] dirs =
+    {
+        new Vector2Int(0,1),
+        new Vector2Int(0,-1),
+        new Vector2Int(1,0),
+        new Vector2Int(-1,0)
+    };                                  // 탐색 순서
 
-    Coroutine generateRoutine;
-    Coroutine showRoutine;
-    List<Vector2Int> escapeRoute = new List<Vector2Int>();
+    protected Coroutine generateRoutine;
+    protected Coroutine showRoutine;
+    protected List<Vector2Int> escapeRoute = new List<Vector2Int>();
 
     // Start is called before the first frame update
     void Start()
@@ -37,29 +44,39 @@ public class MazeGenerator : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.Space))
         {
-            if(generateRoutine != null)
-            {
-                Debug.LogWarning("맵 생성 시도중, 잠시 후 재시도 희망");
-                return;
-            }
-
-            if (showRoutine != null)
-            {
-                StopCoroutine(showRoutine);
-                showRoutine = null;
-            }
-
-            generateRoutine = StartCoroutine(TryGenerate());
+            Generate();
         }
 
         if(Input.GetKeyDown(KeyCode.R) && escapeRoute.Count > 0)        // R키를 누르고 탈출 경로가 존재 할때
         {
-            if (showRoutine != null) return;
-            showRoutine = StartCoroutine(ShowEscapeRoute());
+            ShowRoute();
         }
     }
 
-    IEnumerator TryGenerate()
+    public virtual void Generate()
+    {
+        if (generateRoutine != null)
+        {
+            Debug.LogWarning("맵 생성 시도중, 잠시 후 재시도 희망");
+            return;
+        }
+
+        if (showRoutine != null)
+        {
+            StopCoroutine(showRoutine);
+            showRoutine = null;
+        }
+
+        generateRoutine = StartCoroutine(TryGenerate());
+    }
+
+    public virtual void ShowRoute()
+    {
+        if (showRoutine != null) return;
+        showRoutine = StartCoroutine(ShowEscapeRoute());
+    }
+
+    protected IEnumerator TryGenerate()
     {
         goal = new Vector2Int(mapWidth - 2, mapHeight - 2);
 
@@ -72,7 +89,7 @@ public class MazeGenerator : MonoBehaviour
             map = GenerateMaze();                               // 맵 새로 생성
 
             escapeRoute = new List<Vector2Int>();
-            bool ok = SearchMaze(1, 1, escapeRoute);                         // 시작점 (1, 1)
+            bool ok = SearchMaze(start.x, start.y, escapeRoute);                         // 시작점 (1, 1)
             if (ok)
             {
                 Debug.Log($"{currentTry}만큼 시도, 성공");
@@ -94,18 +111,19 @@ public class MazeGenerator : MonoBehaviour
         generateRoutine = null;
     }
 
-    IEnumerator ShowEscapeRoute()
+    protected IEnumerator ShowEscapeRoute()
     {
-        while (escapeRoute.Count > 0)
+        List<Vector2Int> routeCopy = new List<Vector2Int>(escapeRoute.ToArray());
+        while (routeCopy.Count > 0)
         {
-            Vector2Int pos = escapeRoute[0];
+            Vector2Int pos = routeCopy[0];
             GameObject route = GameObject.CreatePrimitive(PrimitiveType.Cube);
             route.transform.SetParent(transform);
             route.transform.position = new Vector3(pos.x, 0.5f, pos.y);
             route.transform.localScale = Vector3.one * 0.6f;
             route.GetComponent<MeshRenderer>().material.color = Color.green;
 
-            escapeRoute.Remove(pos);
+            routeCopy.Remove(pos);
             yield return new WaitForSeconds(0.1f);
         }
 
@@ -171,7 +189,7 @@ public class MazeGenerator : MonoBehaviour
     bool IsWall(int x, int y)
     {
         if (x == 0 || y == 0 || x == mapWidth - 1 || y == mapHeight - 1) return true;       // 테두리는 벽
-        if (x == 1 && y == 1) return false;                                         // 시작지점은 빈공간
+        if (x == start.x && y == start.y) return false;                                         // 시작지점은 빈공간
         if (x == goal.x && y == goal.y) return false;                               // 골 지점은 빈공간
 
         return Random.value < wallRate;
