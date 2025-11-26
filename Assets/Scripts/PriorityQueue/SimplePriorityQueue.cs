@@ -61,4 +61,13 @@ public class SimplePriorityQueue<T>
             i = smallest;
         }
     }
+
+    public bool Contains(T item)
+    {
+        foreach (var h in heap)
+            if (Equals(h.item, item))
+                return true;
+
+        return false;
+    }
 }
