@@ -93,6 +93,9 @@ public class TileWeighted
     public int forest = 5;
     public int mud = 4;
 
+    [Header("일반 타일에 적이 등장 할 확률")]
+    public float enemyRate = 0;
+
 
     public int GetRandomTile()
     {
@@ -101,7 +104,12 @@ public class TileWeighted
         int ran = Random.Range(0, total);
 
         if (ran < ground)
-            return 1;
+        {
+            if (Random.value < enemyRate)
+                return 4;                           // 4 = 적이 있는 바닥 타일
+            else
+                return 1;
+        }
         else if (ran < ground + forest)
             return 2;
         else if (ran < ground + forest + mud)
